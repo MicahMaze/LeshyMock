@@ -24,34 +24,40 @@ class Expector
 public:
     void SetExpected(int expected)
     {
-        timesExpected = expected;
+        times_expected = expected;
     }
 
     void UpdateCalled()
     {
-        ++timesCalled;
+        called = true;
+        ++times_called;
     }
 
-    void Enforce(char* name)
+    void Enforce(char* name, char* file_name, int line_number)
     {
-        if (timesCalled < timesExpected)
+        if (times_called < times_expected)
         {
-            printf("%s called less times than expected.\n", name);
-            printf("Expected: %d\n", timesExpected);
-            printf("Actual: %d\n", timesCalled);
+            printf("%s:%d - %s called less times than expected.\n", file_name, line_number, name);
+            printf("Expected: %d\n", times_expected);
+            printf("Actual: %d\n", times_called);
             exit(EXIT_FAILURE);
         }
-        else if (timesCalled > timesExpected && timesExpected > 0)
+        else if (times_called > times_expected && called)
         {
-            printf("%s called more times than expected.\n", name);
-            printf("Expected: %d\n", timesExpected);
-            printf("Actual: %d\n", timesCalled);
+            printf("%s:%d - %s called more times than expected.\n", file_name, line_number, name);
+            printf("Expected: %d\n", times_expected);
+            printf("Actual: %d\n", times_called);
             exit(EXIT_FAILURE);
         }
+
+        called = false;
+        times_called = 0;
     }
 
-    int timesExpected = 0;
-    int timesCalled = 0;
+private:
+    bool called = false;
+    int times_expected = 0;
+    int times_called = 0;
 };
 
 #define MOCK_CLASS(m, p) \
@@ -78,6 +84,11 @@ public:
     }
 
 #define MOCK_METHOD_INTERNAL_VOID(name, num_params) \
+    class LESHY_OBJECT(name) { \
+    public:\
+    Expector expector; \
+    }; \
+    LESHY_OBJECT(name) LESHY_NAME(name); \
     void name( \
     ) { \
     return; \
@@ -87,7 +98,7 @@ public:
     LESHY_NAME(n).expector.SetExpected(t)
 
 #define ENFORCE_EXPECT(n) \
-    LESHY_NAME(n).expector.Enforce((char*)STRINGIZE(n))
+    LESHY_NAME(n).expector.Enforce((char*)STRINGIZE(n), (char*)__FILE__, __LINE__)
 
 //*************************
 // User Methods
@@ -97,19 +108,29 @@ public:
 
 #define EndMock };
 
-#define MockMethod(type, name) MOCK_METHOD_INTERNAL(type, name, 0)
+#define MockMethod(type, name) MOCK_METHOD_INTERNAL(type, name, 0);
 
-#define MockVoidMethod(name) MOCK_METHOD_INTERNAL_VOID(name, 0)
+#define MockVoidMethod(name) MOCK_METHOD_INTERNAL_VOID(name, 0);
 
 #define Return(value) SetReturn(value)
 
 #define IfCalls(name, action) LESHY_NAME(name).action
 
-#define Expect(times, name) EXPECT_INTERNAL(times, name)
+#define CallsExactly(name, times) EXPECT_INTERNAL(times, name)
 
-#define ExpectOnce(name) EXPECT_INTERNAL(1, name)
+#define CallsOnce(name) EXPECT_INTERNAL(1, name)
+
+#define CallsNever(name) EXPECT_INTERNAL(0, name)
 
 #define Enforce(name) ENFORCE_EXPECT(name)
+
+
+//*************************
+// Wanted Functionality
+//*************************
+// CallsAtLeast
+// CallsAtMost
+// ClearRules
     
 
 #endif // LESHY_MOCK
