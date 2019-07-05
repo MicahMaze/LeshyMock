@@ -64,7 +64,7 @@ private:
     class m : public p {\
     public:
 
-#define MOCK_METHOD_INTERNAL(type, name, num_params) \
+#define MOCK_METHOD_INTERNAL(type, name, num_params, ...) \
     class LESHY_OBJECT(name) { \
     public:\
     void SetReturn(type value) { \
@@ -77,7 +77,7 @@ private:
     Expector expector; \
     }; \
     LESHY_OBJECT(name) LESHY_NAME(name); \
-    type name( \
+    type name( __VA_ARGS__\
     ) { \
     LESHY_NAME(name).expector.UpdateCalled(); \
     return LESHY_NAME(name).GetReturn(); \
@@ -108,7 +108,7 @@ private:
 
 #define EndMock };
 
-#define MockMethod(type, name) MOCK_METHOD_INTERNAL(type, name, 0);
+#define MockMethod(type, name, ...) MOCK_METHOD_INTERNAL(type, name, 0, __VA_ARGS__);
 
 #define MockVoidMethod(name) MOCK_METHOD_INTERNAL_VOID(name, 0);
 
