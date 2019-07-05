@@ -1,5 +1,5 @@
 #include "MockFoo.h"
-#include <cstdio>
+#include <iostream>
 
 int main()
 {
@@ -10,6 +10,7 @@ int main()
     mockFoo.CallsOnce(TestMethod1);
 
     bool b = mockFoo.TestMethod1();
+    std::cout << b << std::endl;
 
     // Enforce first call
     mockFoo.Enforce(TestMethod1);
@@ -18,9 +19,15 @@ int main()
     mockFoo.CallsNever(TestMethod2);
 
     b = mockFoo.TestMethod1();
+    std::cout << b << std::endl;
 
     // Enforce second call
     mockFoo.Enforce(TestMethod1);
+
+    mockFoo.CallsAtMost(TestMethod1, 3);
+
+    mockFoo.TestMethod1();
+    mockFoo.TestMethod1();
 
     printf("Test Passed!\n");
 }

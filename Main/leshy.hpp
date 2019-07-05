@@ -19,11 +19,41 @@
 #define LESHY_NAME(n) leshyvar_##n
 #define LESHY_OBJECT(n) CONCAT(leshyobj_##n_, __LINE__)
 
+enum Constraint
+{
+    exactly = 0,
+    at_most,
+    at_least
+};
+
 class Expector
 {
 public:
-    void SetExpected(int expected)
+    ~Expector()
     {
+        if (ruleSet)
+        {
+            if (times_called < times_expected && constraint != at_most && !enforced)
+            {
+                PrintFail((char*)"called less times than expected.", (char*)"", 0);
+            }
+            else if (times_called > times_expected && constraint != at_least && called)
+            {
+                PrintFail((char*)"called more times than expected.", (char*)"", 0);
+            }
+        }
+    }
+
+    void SetName(char* n)
+    {
+        name = n;
+    }
+
+    void SetExpected(int expected, Constraint c)
+    {
+        ruleSet = true;
+        enforced = false;
+        constraint = c;
         times_expected = expected;
     }
 
@@ -33,40 +63,67 @@ public:
         ++times_called;
     }
 
-    void Enforce(char* name, char* file_name, int line_number)
+    void Enforce(char* file_name, int line_number)
     {
-        if (times_called < times_expected)
+        if (ruleSet)
         {
-            printf("%s:%d - %s called less times than expected.\n", file_name, line_number, name);
-            printf("Expected: %d\n", times_expected);
-            printf("Actual: %d\n", times_called);
-            exit(EXIT_FAILURE);
-        }
-        else if (times_called > times_expected && called)
-        {
-            printf("%s:%d - %s called more times than expected.\n", file_name, line_number, name);
-            printf("Expected: %d\n", times_expected);
-            printf("Actual: %d\n", times_called);
-            exit(EXIT_FAILURE);
-        }
+            if (times_called < times_expected && constraint != at_most)
+            {
+                PrintFail((char*)"called less times than expected.", file_name, line_number);
+            }
+            else if (times_called > times_expected && constraint != at_least && called)
+            {
+                PrintFail((char*)"called more times than expected.", file_name, line_number);
+            }
 
+            enforced = true;
+            called = false;
+            times_called = 0;
+        }
+    }
+
+    void ClearRules()
+    {
+        ruleSet = false;
+        enforced = false;
         called = false;
+        times_expected = 0;
         times_called = 0;
     }
 
 private:
+    void PrintFail(char* msg, char* file_name, int line_number)
+    {
+        if (line_number != 0)
+        {
+            printf("%s:%d - ", file_name, line_number);
+        }
+
+        printf("%s\n", msg);
+        printf("Expected: %d\n", times_expected);
+        printf("Actual: %d\n", times_called);
+        exit(EXIT_FAILURE);
+    }
+
+    char* name;
+    bool ruleSet = false;
+    bool enforced = false;
     bool called = false;
     int times_expected = 0;
     int times_called = 0;
+    Constraint constraint = exactly;
 };
 
 #define MOCK_CLASS(m, p) \
     class m : public p {\
-    public:
+    public: 
 
 #define MOCK_METHOD_INTERNAL(type, name, num_params, ...) \
     class LESHY_OBJECT(name) { \
     public:\
+    LESHY_OBJECT(name)() { \
+    expector.SetName((char*)STRINGIZE(name)); \
+    }  \
     void SetReturn(type value) { \
     returnValue = value; \
     } \
@@ -94,11 +151,14 @@ private:
     return; \
     }
 
-#define EXPECT_INTERNAL(t, n) \
-    LESHY_NAME(n).expector.SetExpected(t)
+#define EXPECT_INTERNAL(t, n, c) \
+    LESHY_NAME(n).expector.SetExpected(t, c)
 
 #define ENFORCE_EXPECT(n) \
-    LESHY_NAME(n).expector.Enforce((char*)STRINGIZE(n), (char*)__FILE__, __LINE__)
+    LESHY_NAME(n).expector.Enforce((char*)__FILE__, __LINE__)
+
+#define CLEAR_RULES(n) \
+    LESHY_NAME(n).expector.ClearRules()
 
 //*************************
 // User Methods
@@ -116,21 +176,22 @@ private:
 
 #define IfCalls(name, action) LESHY_NAME(name).action
 
-#define CallsExactly(name, times) EXPECT_INTERNAL(times, name)
+#define CallsExactly(name, times) EXPECT_INTERNAL(times, name, exactly)
 
-#define CallsOnce(name) EXPECT_INTERNAL(1, name)
+#define CallsOnce(name) EXPECT_INTERNAL(1, name, exactly)
 
-#define CallsNever(name) EXPECT_INTERNAL(0, name)
+#define CallsNever(name) EXPECT_INTERNAL(0, name, exactly)
+
+#define CallsAtLeast(name, times) EXPECT_INTERNAL(times, name, at_least)
+
+#define CallsAtMost(name, times) EXPECT_INTERNAL(times, name, at_most)
 
 #define Enforce(name) ENFORCE_EXPECT(name)
 
+#define ClearRules(name) CLEAR_RULES(name)
 
 //*************************
 // Wanted Functionality
 //*************************
-// CallsAtLeast
-// CallsAtMost
-// ClearRules
-    
 
 #endif // LESHY_MOCK

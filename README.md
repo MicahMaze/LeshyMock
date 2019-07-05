@@ -4,7 +4,7 @@ Leshy Mock is a unit test mocking framework for C++.
 
 ## Example of use:
 
-    // Tested class' Dependency
+Tested class' Dependency
     class Foo : public IFoo
     {
     public:
@@ -13,7 +13,7 @@ Leshy Mock is a unit test mocking framework for C++.
         bool DoOtherStuff();
     };
 
-    // Tested Class
+Tested Class
     class Bar : public IBar
     {
     public:
@@ -40,14 +40,14 @@ Leshy Mock is a unit test mocking framework for C++.
         IFoo foo;
     };
 
-    // Leshy Mock for dependency
+Leshy Mock for dependency
     MockClass(MockFoo, IFoo)
         MockMethod(int, GetInteger)
         MockVoidMethod(DoStuff)
         MockMethod(bool, DoOtherStuff)
     EndMock
 
-    // Test
+Test
     TEST(BarTests, UseInteger)
     {
         MockFoo mockFoo;
@@ -69,6 +69,6 @@ Leshy Mock is a unit test mocking framework for C++.
         bar.UseInteger(); // Call tested method
 
         mockFoo.Enforce(GetInteger); // Enforce all defined rules for GetInteger - Called Once
-        mockFoo.Enforce(DoStuff); // Enforce all defined rules for DoStuff since last enforce - Called twice
         mockFoo.Enforce(DoOtherStuff); // Finally enforce that DoOtherStuff was never called during this test
-    }
+    } // We forgot to enforce DoStuff before ending the test but its ok, all outstanding rules are automatically enforced on destruction
+

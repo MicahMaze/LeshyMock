@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 CFLAGS=-std=c++11 -Wall
 INC=-I../Main
 
